@@ -11,7 +11,7 @@ FROM Department
 ORDER BY Budget DESC
 
 --List each department name along with any employees (full name) in that department who are supervisors.
-SELECT d.name as DepartmentName, e.FirstName + ' ' + e.LastName as FullName_Supervisor, e.DepartmentId
+SELECT d.name as DepartmentName, e.FirstName + ' ' + e.LastName as Supervisor, e.DepartmentId
 FROM Employee e LEFT JOIN Department d on e.DepartmentId = d.Id
 WHERE e.IsSupervisor = 1
 
@@ -66,10 +66,10 @@ INSERT INTO EmployeeTraining (EmployeeId, TrainingProgramId) VALUES (4, 12);
 
 
 --List the top 3 most popular training programs. (For this question, consider each record in the training program table to be a UNIQUE training program).
-SELECT TOP 3 tp.Id, COUNT(et.Id) NumberOfAttendees
+SELECT TOP 3 tp.Id, tp.Name, COUNT(et.Id) NumberOfAttendees
 FROM EmployeeTraining et INNER JOIN TrainingProgram tp ON et.TrainingProgramId = tp.Id
-						GROUP BY tp.Id
-						ORDER BY COUNT(8) DESC
+						GROUP BY tp.Id, tp.Name
+						ORDER BY COUNT(*) DESC
 
 
 --List the top 3 most popular training programs. (For this question consider training programs with the same name to be the SAME training program).
@@ -83,9 +83,20 @@ SELECT e.Id, e.FirstName, e.LastName
 FROM Employee e LEFT JOIN ComputerEmployee ce ON e.Id = ce.EmployeeId
 WHERE NOT EXISTS(SELECT ce.EmployeeId FROM ComputerEmployee ce WHERE e.Id = ce.EmployeeId)
 
+--select ce.EmployeeId
+--from ComputerEmployee ce
+--where ce.UnassignDate is not null
+--and ce.EmployeeId not in (
+
+--select ce.EmployeeId
+--from ComputerEmployee ce
+--where ce.UnassignDate is null)
+
+--select * from ComputerEmployee where employeeid = 1;
+
 --List all employees along with their current computer information make and manufacturer combined into a field entitled ComputerInfo. If they do not have a computer, this field should say "N/A".
 SELECT e.Id, e.FirstName, e.LastName, CONCAT(ISNULL(c.Manufacturer, 'N/A'), ' ', ISNULL(c.Make, '')) as ComputerInfo
-FROM Employee e LEFT JOIN ComputerEmployee ce ON e.Id = ce.EmployeeId
+FROM Employee e LEFT JOIN ComputerEmployee ce ON e.Id = ce.EmployeeId and ce.UnassignDate is null
 LEFT JOIN Computer c ON ce.ComputerId = c.Id
 
 --List all computers that were purchased before July 2019 that are have not been decommissioned.
@@ -114,9 +125,9 @@ GROUP BY p.Id, p.Price, p.Title, p.Description, c.FirstName, c.LastName
 ORDER BY NumberSold DESC
 
 --Find the name of the customer who has made the most purchases
-SELECT c.FirstName + ' ' + c.LastName as Customer, COUNT(*) as NumberOfPurchases
+SELECT TOP 1 WITH TIES c.FirstName + ' ' + c.LastName as Customer, COUNT(o.CustomerId) as OrdersPlaced
 FROM CUSTOMER c LEFT JOIN [Order] o ON o.CustomerId = c.Id
-LEFT JOIN OrderProduct op ON op.OrderId = o.Id
+
 GROUP BY c.FirstName, c.LastName
 ORDER BY NumberOfPurchases DESC
 
