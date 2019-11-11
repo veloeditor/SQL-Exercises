@@ -78,8 +78,56 @@ FROM EmployeeTraining et LEFT JOIN TrainingProgram tp ON et.TrainingProgramId = 
 						GROUP BY tp.Name
 						ORDER BY COUNT(*) DESC
 
+--List all employees who do not have computers.
+SELECT e.Id, e.FirstName, e.LastName
+FROM Employee e LEFT JOIN ComputerEmployee ce ON e.Id = ce.EmployeeId
+WHERE NOT EXISTS(SELECT ce.EmployeeId FROM ComputerEmployee ce WHERE e.Id = ce.EmployeeId)
 
+--List all employees along with their current computer information make and manufacturer combined into a field entitled ComputerInfo. If they do not have a computer, this field should say "N/A".
+SELECT e.Id, e.FirstName, e.LastName, CONCAT(ISNULL(c.Manufacturer, 'N/A'), ' ', ISNULL(c.Make, '')) as ComputerInfo
+FROM Employee e LEFT JOIN ComputerEmployee ce ON e.Id = ce.EmployeeId
+LEFT JOIN Computer c ON ce.ComputerId = c.Id
 
+--List all computers that were purchased before July 2019 that are have not been decommissioned.
+SELECT c.Id, c.Manufacturer, c.Make, C.PurchaseDate, c.DecomissionDate 
+FROM Computer c WHERE c.PurchaseDate < '2019-07-01' AND c.DecomissionDate IS NULL;
 
+--List all employees along with the total number of computers they have ever had.
+SELECT e.Id, e.FirstName, e.LastName, COUNT(*) as NumberOfComputers
+FROM Employee e INNER JOIN ComputerEmployee ce on ce.EmployeeId = e.Id
+GROUP BY e.Id, e.FirstName, e.LastName
 
+--List the number of customers using each payment type
+SELECT pt.Name as PaymentType, COUNT(*) as NumberOfCustomers
+FROM PaymentType pt LEFT JOIN Customer c on pt.CustomerId = c.Id
+GROUP BY pt.Name
 
+--List the 10 most expensive products and the names of the seller
+SELECT TOP 10 p.Id, p.Title as ProductTitle, p.Price, p.Description, c.Id, c.FirstName + ' ' + c.LastName as Seller
+FROM Product p LEFT JOIN Customer c ON p.CustomerId = c.Id
+ORDER BY p.Price DESC
+
+--List the 10 most purchased products and the names of the seller
+SELECT TOP 10 p.Id, p.Title, p.Price, p.Description, c.FirstName + ' ' + c.LastName as Seller, COUNT(*) as NumberSold
+FROM OrderProduct op LEFT JOIN Product p ON p.Id = op.ProductId LEFT JOIN Customer c on p.CustomerId = c.Id
+GROUP BY p.Id, p.Price, p.Title, p.Description, c.FirstName, c.LastName
+ORDER BY NumberSold DESC
+
+--Find the name of the customer who has made the most purchases
+SELECT c.FirstName + ' ' + c.LastName as Customer, COUNT(*) as NumberOfPurchases
+FROM CUSTOMER c LEFT JOIN [Order] o ON o.CustomerId = c.Id
+LEFT JOIN OrderProduct op ON op.OrderId = o.Id
+GROUP BY c.FirstName, c.LastName
+ORDER BY NumberOfPurchases DESC
+
+--List the amount of total sales by product type
+SELECT pt.Id, pt.Name as ProductType, SUM(p.Price) as Price
+FROM ProductType pt LEFT JOIN Product p on p.ProductTypeId = pt.Id
+GROUP BY pt.Id, pt.Name
+ORDER BY pt.Id
+
+--List the total amount made from all sellers
+SELECT c.Id, c.FirstName + ' ' + c.LastName as Seller, SUM(p.Price) as TotalSales
+FROM Customer c INNER JOIN Product p on p.CustomerId = c.Id INNER JOIN OrderProduct op on op.ProductId = p.Id
+GROUP BY c.id, c.FirstName, C.LastName
+ORDER BY SUM(p.Price) DESC
